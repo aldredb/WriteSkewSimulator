@@ -114,6 +114,8 @@ def getAliceCurrentBalance(tx_sess, acc_coll, do_conflict_check):
 
     for record in acc_coll.find({'account_holder': 'Alice'}, session=tx_sess):
         if do_conflict_check:
+            # Perform dummy update so that the transaction includes a write operation instead of just a read
+            # This way, if another transaction is updating the same document, that other transaction will fail with Write Conflict error
             account = acc_coll.find_one_and_update(
                 {
                     '_id': record['_id']
@@ -125,6 +127,7 @@ def getAliceCurrentBalance(tx_sess, acc_coll, do_conflict_check):
                 session=tx_sess)
         else:
             account = record
+            print(f"{account['account_holder']} - {account['account_type']} - {account['balance']}")
 
         balance += account['balance'].to_decimal()
 

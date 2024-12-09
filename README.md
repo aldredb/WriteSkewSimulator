@@ -6,7 +6,34 @@ The application simulates the "2 bank accounts" write skew scenario outlined in 
 
 For this demonstration application, to reproduce the write skew situation, a simple _bank accounts_ MongoDB database collection will be used which contains four account records: 2 for Alice (a current account + a savings account), and 2 for Bob (a current account + a savings account), as shown below:
 
- ![Final Data](img/startdata.png)
+```js
+[
+  {
+    _id: ObjectId('6756c8941945476cad44b134'),
+    account_holder: 'Alice',
+    account_type: 'CURRENT',
+    balance: Decimal128('10')
+  },
+  {
+    _id: ObjectId('6756c8941945476cad44b135'),
+    account_holder: 'Bob',
+    account_type: 'CURRENT',
+    balance: Decimal128('300')
+  },
+  {
+    _id: ObjectId('6756c8941945476cad44b136'),
+    account_holder: 'Bob',
+    account_type: 'SAVINGS',
+    balance: Decimal128('2000')
+  },
+  {
+    _id: ObjectId('6756c8941945476cad44b137'),
+    account_holder: 'Alice',
+    account_type: 'SAVINGS',
+    balance: Decimal128('75')
+  }
+]
+```
 
 One instance of the application will be run to attempt to move an amount of 50 from Alice's current account to Bob's current account and a separate instance of the application will be run to move an amount of 50 from Alice's savings account to Bob's savings account, concurrently. When totalling the balance of both of Alice's account (current + savings), Alice only has enough funds to support one of these two payments, to avoid being net overdrawn.
 
@@ -28,23 +55,31 @@ The demonstration first shows how, with a naive approach, Alice can inadvertentl
 ./initdb.sh 'mongodb://localhost:27017,localhost:27027,localhost:27037/?replicaSet=TestRS'
 ```
 
-2. Using the [Mongo Shell](https://docs.mongodb.com/manual/mongo/) or [MongoDB Compass](https://www.mongodb.com/products/compass) inspect the contents of the new `bank` database. For example (change the URL first):
+2. Using the [Mongo Shell](https://www.mongodb.com/docs/mongodb-shell/) or [MongoDB Compass](https://www.mongodb.com/products/compass) inspect the contents of the new `bank` database. For example (change the URL first):
 
 ```bash
-mongo 'mongodb://localhost:27017,localhost:27027,localhost:27037/?replicaSet=TestRS'
+mongosh 'mongodb://localhost:27017,localhost:27027,localhost:27037/?replicaSet=TestRS'
 use bank
 show collections
 db.accounts.find()
 exit
 ```
 
-3. In terminal 1, launch the project's Python application with an argument flag `CURRENT` specified to indicate that a payment of 50 should be made, debiting Alice's __current account__ and crediting Bob's current account. For example (change the URL first):
+3. Setup Python Virtual Environment and install dependencies
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip3 install -r requirements.txts
+```
+
+4. In terminal 1, launch the project's Python application with an argument flag `CURRENT` specified to indicate that a payment of 50 should be made, debiting Alice's __current account__ and crediting Bob's current account. For example (change the URL first):
 
 ```bash
 ./make-payment.py -u 'mongodb://localhost:27017,localhost:27027,localhost:27037/?replicaSet=TestRS' -a CURRENT
 ```
 
-4. Very quickly (__within 10 seconds of executing the previous step__), in terminal 2, launch the project's Python application but this time with the flag `SAVINGS` to indicate that a payment of 50 should be made, debiting Alice's __savings account__ and crediting Bob's savings account. For example (change the URL first):
+5. Very quickly (__within 10 seconds of executing the previous step__), in terminal 2, launch the project's Python application but this time with the flag `SAVINGS` to indicate that a payment of 50 should be made, debiting Alice's __savings account__ and crediting Bob's savings account. For example (change the URL first):
 
 ```bash
 ./make-payment.py -u 'mongodb://localhost:27017,localhost:27027,localhost:27037/?replicaSet=TestRS' -a SAVINGS

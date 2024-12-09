@@ -11,7 +11,7 @@ ACC_COLL_NAME="accounts"
 printf "\nUsing MongoDB DB URL: ${DB_URL}\n"
 
 printf "\nStarted: Initialising DB\n"
-mongo --eval "
+mongosh --eval "
     db = db.getSiblingDB('${DB_NAME}');
     accColl = db['${ACC_COLL_NAME}'];
     accColl.drop();    
